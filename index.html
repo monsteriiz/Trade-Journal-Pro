@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Trading Journal Pro — Redesign Reference</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+/* ============================================================
+   Trading Journal Pro — REDESIGN REFERENCE
+   Implements:  #1 dark "pro" theme · #3 A-Setup Checklist + Quality Score
+                #4 Playbook builder · #5 New charts + date range
+                #6 English-consistent labels + better empty states
+   ============================================================ */
+
+:root {
+  --bg-0: #060912;
+  --bg-1: #0a0f1c;
+  --bg-2: #0f1626;
+  --card: rgba(20, 28, 46, 0.55);
+  --card-border: rgba(120, 200, 220, 0.08);
+  --card-border-hi: rgba(120, 200, 220, 0.18);
+  --text: #e6ecf5;
+  --text-dim: #8a96b0;
+  --text-mute: #5b6786;
+
+  --accent: #3ce0c4;        /* teal/cyan */
+  --accent-soft: rgba(60, 224, 196, 0.12);
+  --accent-bright: #5ff3da;
+  --green: #2ed573;
+  --green-soft: rgba(46, 213, 115, 0.14);
+  --red: #ff5675;
+  --red-soft: rgba(255, 86, 117, 0.14);
+  --amber: #ffb648;
+  --violet: #8b7cff;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-lg: 20px;
+
+  --shadow: 0 4px 24px rgba(0,0,0,.35), 0 1px 0 rgba(255,255,255,.03) inset;
+  --shadow-hi: 0 6px 40px rgba(60,224,196,.10), 0 1px 0 rgba(255,255,255,.04) inset;
+
+  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; }
+body {
+  font-family: var(--font-ui);
+  color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(60,224,196,.08), transparent 60%),
+    radial-gradient(900px 500px at -10% 30%, rgba(139,124,255,.06), transparent 60%),
+    linear-gradient(180deg, var(--bg-0), var(--bg-1) 60%, var(--bg-0));
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* subtle starfield */
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.18), transparent 60%),
+    radial-gradient(1px 1px at 70% 80%, rgba(255,255,255,.14), transparent 60%),
+    radial-gradient(1px 1px at 40% 60%, rgba(255,255,255,.12), transparent 60%),
+    radial-gradient(1px 1px at 90% 10%, rgba(255,255,255,.10), transparent 60%),
+    radial-gradient(1px 1px at 10% 90%, rgba(255,255,255,.10), transparent 60%);
+}
+
+a { color: var(--accent); text-decoration: none; }
+button { font-family: inherit; }
+
+/* ====== Layout shell ====== */
+.shell { position: relative; z-index: 1; padding: 20px 28px 60px; max-width: 1480px; margin: 0 auto; }
+
+/* ====== Top ribbon: live ticker (visual only — placeholder data) ====== */
+.ticker {
+  display: flex; align-items: center; gap: 22px;
+  padding: 8px 14px; margin: 0 0 14px;
+  background: rgba(8,12,22,.7);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  overflow: hidden; white-space: nowrap;
+}
+.ticker .pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 10px; border-radius: 999px; background: var(--green-soft); color: var(--green);
+  font-weight: 700; letter-spacing: .04em; font-size: 10px;
+}
+.ticker .item { color: var(--text-dim); }
+.ticker .item b { color: var(--text); margin: 0 6px; font-weight: 600; }
+.ticker .up { color: var(--green); }
+.ticker .down { color: var(--red); }
+
+/* ====== Top bar ====== */
+.topbar { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; flex-wrap: wrap; }
+.brand {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 14px; border-radius: var(--radius);
+  background: var(--card); border: 1px solid var(--card-border);
+  backdrop-filter: blur(10px);
+}
+.brand-logo {
+  width: 30px; height: 30px; border-radius: 9px;
+  background: linear-gradient(135deg, var(--accent), var(--violet));
+  display:grid; place-items:center; color:#0a0f1c; font-weight:800;
+}
+.brand-name { font-weight: 700; letter-spacing: .02em; }
+.brand-sub { font-size: 10px; color: var(--text-mute); letter-spacing: .12em; text-transform: uppercase; }
+
+.account-select {
+  display:inline-flex; align-items:center; gap:8px;
+  background: var(--card); border:1px solid var(--card-border);
+  padding: 8px 12px; border-radius: var(--radius); backdrop-filter: blur(10px);
+  font-size: 13px;
+}
+.account-select select {
+  background: transparent; border: none; color: var(--text); font-family: inherit; font-weight: 600;
+  outline: none; appearance: none; padding-right: 14px;
+}
+.account-select::after{
+  content:"▾"; color: var(--text-dim); font-size: 10px; margin-left: -14px;
+}
+
+.spacer { flex: 1; }
+
+.kpi-summary {
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-dim);
+  padding: 6px 12px; border-radius: 999px; border:1px solid var(--card-border); background: rgba(8,12,22,.5);
+}
+.kpi-summary b { color: var(--green); font-weight: 700; }
+
+.btn {
+  display:inline-flex; align-items:center; gap:8px;
+  border:1px solid var(--card-border); background: var(--card); color: var(--text);
+  padding: 9px 14px; border-radius: var(--radius); cursor: pointer; font-weight: 600; font-size: 13px;
+  transition: all .15s ease;
+  backdrop-filter: blur(10px);
+}
+.btn:hover { border-color: var(--card-border-hi); transform: translateY(-1px); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #4ec5e7);
+  color: #061018; border-color: transparent; font-weight: 700;
+  box-shadow: 0 6px 24px rgba(60,224,196,.25);
+}
+.btn-primary:hover { box-shadow: 0 10px 30px rgba(60,224,196,.35); }
+.btn-ghost { background: transparent; }
+.btn-sm { padding: 6px 10px; font-size: 12px; }
+
+.synced-chip {
+  display:inline-flex; align-items:center; gap:6px;
+  padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: var(--green-soft); color: var(--green); border: 1px solid rgba(46,213,115,.2);
+}
+.synced-chip::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow: 0 0 8px var(--green); }
+
+/* ====== Tabs ====== */
+.tabs { display:flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab {
+  padding: 9px 16px; font-size: 13px; font-weight: 600; color: var(--text-dim);
+  border-radius: var(--radius); background: transparent; border: 1px solid transparent; cursor: pointer;
+}
+.tab:hover { color: var(--text); }
+.tab.active {
+  background: var(--card); color: var(--text);
+  border-color: var(--card-border-hi);
+  box-shadow: 0 0 0 1px rgba(60,224,196,.2) inset, 0 6px 24px rgba(60,224,196,.10);
+}
+
+/* ====== Filters row ====== */
+.filters-row { display:flex; gap:10px; margin-bottom: 18px; align-items:center; flex-wrap: wrap; }
+.seg {
+  display:inline-flex; padding:4px; border-radius: 999px;
+  background: var(--card); border:1px solid var(--card-border); backdrop-filter: blur(10px);
+}
+.seg button {
+  background: transparent; border: none; color: var(--text-dim);
+  padding: 6px 14px; border-radius: 999px; font-weight: 600; font-size: 12px; cursor: pointer;
+}
+.seg button.active { background: var(--accent); color: #061018; }
+
+.daterange {
+  display:inline-flex; align-items:center; gap:8px; font-size:12px; color: var(--text-dim);
+  background: var(--card); border:1px solid var(--card-border);
+  padding: 7px 12px; border-radius: var(--radius);
+}
+.daterange input {
+  background: transparent; border: none; color: var(--text); font-family: var(--font-mono); font-size: 12px; outline: none;
+}
+
+/* ====== KPI strip ====== */
+.kpis { display:grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 20px; }
+.kpi {
+  position: relative;
+  background: var(--card); border:1px solid var(--card-border);
+  border-radius: var(--radius); padding: 14px 16px;
+  backdrop-filter: blur(14px); box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.kpi::after{
+  content:""; position:absolute; right:-30px; top:-30px; width:120px; height:120px;
+  background: radial-gradient(circle at center, var(--accent-soft), transparent 60%);
+  pointer-events:none;
+}
+.kpi .label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-mute); font-weight: 600; }
+.kpi .value { font-family: var(--font-mono); font-size: 26px; font-weight: 700; margin-top: 6px; letter-spacing: -.01em; }
+.kpi .sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+.kpi.value-pos .value { color: var(--green); }
+.kpi.value-neg .value { color: var(--red); }
+.kpi.value-warn .value { color: var(--amber); }
+.kpi .trend-pill {
+  display:inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700;
+}
+.kpi .trend-pill.up { background: var(--green-soft); color: var(--green); }
+.kpi .trend-pill.down { background: var(--red-soft); color: var(--red); }
+
+/* ====== Cards / panels ====== */
+.row { display:grid; gap: 14px; margin-bottom: 14px; }
+.row.r-2 { grid-template-columns: 1fr 1fr; }
+.row.r-3 { grid-template-columns: 2fr 1fr 1fr; }
+.row.r-3eq { grid-template-columns: 1fr 1fr 1fr; }
+
+.panel {
+  background: var(--card); border: 1px solid var(--card-border);
+  border-radius: var(--radius); padding: 18px;
+  backdrop-filter: blur(14px); box-shadow: var(--shadow);
+}
+.panel h3 {
+  margin: 0 0 14px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-mute); font-weight: 700;
+  display:flex; align-items:center; justify-content: space-between;
+}
+.panel h3 .right { display:flex; gap: 6px; align-items:center; color: var(--text-dim); text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 600; }
+.panel-hi { box-shadow: var(--shadow-hi); border-color: var(--card-border-hi); }
+
+.chart-wrap { position: relative; height: 220px; }
+.chart-wrap.tall { height: 280px; }
+
+/* ====== Calendar ====== */
+.cal {
+  display: grid; grid-template-columns: repeat(7, 1fr) 88px; gap: 6px; font-size: 11px;
+}
+.cal .h { color: var(--text-mute); font-weight: 700; letter-spacing: .12em; padding: 4px; text-transform: uppercase; }
+.cal .d {
+  aspect-ratio: 1.4 / 1; border-radius: var(--radius-sm); padding: 8px;
+  background: rgba(255,255,255,.015); border: 1px solid var(--card-border); color: var(--text-dim);
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.cal .d .num { font-weight: 700; color: var(--text-dim); }
+.cal .d.win  { background: linear-gradient(135deg, rgba(46,213,115,.18), rgba(46,213,115,.05)); border-color: rgba(46,213,115,.25); }
+.cal .d.loss { background: linear-gradient(135deg, rgba(255,86,117,.18), rgba(255,86,117,.05)); border-color: rgba(255,86,117,.25); }
+.cal .d.win  .num, .cal .d.loss .num { color: var(--text); }
+.cal .d .pnl { font-family: var(--font-mono); font-weight: 700; font-size: 12px; }
+.cal .d.win  .pnl { color: var(--green); }
+.cal .d.loss .pnl { color: var(--red); }
+.cal .d .sub { color: var(--text-mute); font-size: 10px; }
+.cal .week {
+  border-radius: var(--radius-sm); padding: 8px; background: rgba(8,12,22,.5); border: 1px dashed var(--card-border);
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  font-family: var(--font-mono);
+}
+.cal .week b { font-size: 13px; }
+.cal .week.win b { color: var(--green); }
+.cal .week .lbl { font-size: 9px; color: var(--text-mute); letter-spacing: .12em; text-transform: uppercase; }
+
+/* ====== Setup table ====== */
+.setup-list { display: flex; flex-direction: column; gap: 8px; }
+.setup-row {
+  display: grid; grid-template-columns: 1fr 60px 80px;
+  gap: 10px; align-items: center;
+  padding: 10px 12px; border-radius: var(--radius-sm); background: rgba(8,12,22,.4);
+  border: 1px solid var(--card-border);
+}
+.setup-row .name { font-weight: 600; }
+.setup-row .winrate {
+  font-family: var(--font-mono); font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent-bright); text-align: center; font-size: 12px;
+}
+.setup-row .pnl { font-family: var(--font-mono); font-weight: 700; text-align: right; }
+.setup-row .pnl.pos { color: var(--green); }
+.setup-row .pnl.neg { color: var(--red); }
+
+/* ====== Recent trades table ====== */
+table.trades { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.trades th {
+  text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--card-border);
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-mute); font-weight: 700;
+}
+table.trades td {
+  padding: 12px 8px; border-bottom: 1px solid var(--card-border);
+  font-family: var(--font-mono); font-size: 13px;
+}
+table.trades tr:hover td { background: rgba(60,224,196,.03); }
+.tag {
+  display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700;
+  letter-spacing: .04em; font-family: var(--font-ui); text-transform: uppercase;
+}
+.tag.buy   { background: var(--green-soft); color: var(--green); }
+.tag.sell  { background: var(--red-soft);   color: var(--red); }
+.tag.dim   { background: rgba(255,255,255,.05); color: var(--text-dim); }
+.qscore {
+  display:inline-flex; align-items:center; gap:6px;
+  font-family: var(--font-mono); font-weight: 700; font-size: 12px;
+  padding: 2px 8px; border-radius: 999px;
+}
+.qscore.hi { background: rgba(60,224,196,.14); color: var(--accent-bright); }
+.qscore.mid{ background: rgba(255,182,72,.14); color: var(--amber); }
+.qscore.lo { background: var(--red-soft); color: var(--red); }
+.pnl-cell.pos { color: var(--green); }
+.pnl-cell.neg { color: var(--red); }
+
+/* ====== A-Setup Checklist ====== */
+.checklist { display: flex; flex-direction: column; gap: 8px; }
+.check-item {
+  display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items:center;
+  padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--card-border);
+  background: rgba(8,12,22,.35); cursor: pointer; user-select: none;
+  transition: all .12s ease;
+}
+.check-item:hover { border-color: var(--card-border-hi); }
+.check-item .box {
+  width: 22px; height: 22px; border-radius: 7px; border: 1.5px solid var(--card-border-hi);
+  display:grid; place-items:center; transition: all .12s ease;
+}
+.check-item .box::after { content:"✓"; color: transparent; font-weight: 800; font-size: 13px; }
+.check-item.on { background: rgba(60,224,196,.07); border-color: rgba(60,224,196,.35); }
+.check-item.on .box { background: var(--accent); border-color: var(--accent); }
+.check-item.on .box::after { color: #061018; }
+.check-item .lbl { font-size: 13px; }
+.check-item .lbl b { font-weight: 700; }
+.check-item .lbl small { color: var(--text-mute); font-size: 11px; display:block; margin-top: 2px; }
+
+.qscore-big {
+  display: flex; align-items:center; gap: 14px; padding: 14px 16px; border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(60,224,196,.12), rgba(139,124,255,.06));
+  border: 1px solid rgba(60,224,196,.25);
+  margin-top: 12px;
+}
+.qscore-big .ring {
+  width: 62px; height: 62px; border-radius: 50%;
+  background: conic-gradient(var(--accent) calc(var(--pct,0) * 1%), rgba(255,255,255,.06) 0);
+  display:grid; place-items:center;
+  position: relative;
+}
+.qscore-big .ring::after{
+  content:""; position:absolute; inset: 6px; border-radius: 50%; background: var(--bg-1);
+}
+.qscore-big .ring span {
+  position: relative; z-index: 1; font-family: var(--font-mono); font-weight: 700; font-size: 18px; color: var(--text);
+}
+.qscore-big .lbl { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-mute); font-weight: 700; }
+.qscore-big .verdict { font-size: 18px; font-weight: 700; margin-top: 2px; }
+.qscore-big .verdict.a { color: var(--accent-bright); }
+
+/* ====== Playbooks ====== */
+.playbook-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.playbook {
+  position: relative;
+  background: var(--card); border: 1px solid var(--card-border);
+  border-radius: var(--radius); padding: 16px;
+  backdrop-filter: blur(10px);
+  cursor: pointer; transition: all .15s ease;
+}
+.playbook:hover { transform: translateY(-2px); border-color: var(--card-border-hi); box-shadow: var(--shadow-hi); }
+.playbook .pb-head { display:flex; align-items:center; gap: 8px; margin-bottom: 10px; }
+.playbook .pb-icon {
+  width: 32px; height: 32px; border-radius: 9px; display:grid; place-items:center;
+  background: var(--accent-soft); color: var(--accent-bright); font-weight: 800;
+}
+.playbook .pb-name { font-weight: 700; font-size: 14px; }
+.playbook .pb-cat { font-size: 10px; color: var(--text-mute); letter-spacing: .12em; text-transform: uppercase; }
+.playbook .pb-stats { display:grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; }
+.playbook .pb-stat { background: rgba(8,12,22,.4); padding: 8px; border-radius: var(--radius-sm); }
+.playbook .pb-stat .v { font-family: var(--font-mono); font-weight: 700; font-size: 14px; }
+.playbook .pb-stat .l { font-size: 9px; color: var(--text-mute); letter-spacing: .12em; text-transform: uppercase; margin-top: 2px; }
+.playbook .pb-meta { display:flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 600;
+  background: rgba(255,255,255,.04); color: var(--text-dim); border: 1px solid var(--card-border);
+}
+.chip.session { background: rgba(139,124,255,.10); color: var(--violet); border-color: rgba(139,124,255,.2); }
+
+/* ====== Notes / footer ====== */
+.note {
+  margin-top: 24px; padding: 14px 16px; border-radius: var(--radius);
+  background: rgba(8,12,22,.5); border: 1px dashed var(--card-border);
+  font-size: 12px; color: var(--text-dim); line-height: 1.6;
+}
+.note b { color: var(--text); }
+
+/* ====== Responsive ====== */
+@media (max-width: 1100px) {
+  .kpis { grid-template-columns: repeat(3, 1fr); }
+  .row.r-3, .row.r-2, .row.r-3eq { grid-template-columns: 1fr; }
+  .playbook-grid { grid-template-columns: 1fr; }
+  .cal { grid-template-columns: repeat(7, 1fr); }
+  .cal .week { display:none; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ============ Live ticker (visual only — placeholder data) ============ -->
+  <div class="ticker">
+    <span class="pill">● LIVE</span>
+    <span class="item">XAUUSD <b>2,318.50</b><span class="down">-0.12%</span></span>
+    <span class="item">BTCUSD <b>64,212</b><span class="up">+1.82%</span></span>
+    <span class="item">NAS100 <b>18,420</b><span class="up">+0.54%</span></span>
+    <span class="item">US30 <b>38,910</b><span class="down">-0.18%</span></span>
+    <span class="item">SPX500 <b>5,214</b><span class="up">+0.31%</span></span>
+    <span class="item">DXY <b>104.72</b><span class="down">-0.09%</span></span>
+  </div>
+
+  <!-- ============ Top bar ============ -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-logo">T</div>
+      <div>
+        <div class="brand-name">Trading Journal Pro</div>
+        <div class="brand-sub">Trader Workspace</div>
+      </div>
+    </div>
+
+    <div class="account-select">
+      <span style="color:var(--text-mute);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600">Account</span>
+      <select>
+        <option>Lucid #4</option>
+        <option>HardCORE</option>
+        <option>FTMO PA$$</option>
+        <option>TopStep 50k</option>
+      </select>
+    </div>
+
+    <button class="btn btn-sm">+ Manage Accounts</button>
+
+    <span class="spacer"></span>
+
+    <span class="kpi-summary">6 trades · Net <b>+$224.10</b></span>
+    <span class="synced-chip">Synced</span>
+    <button class="btn">↻ Restore</button>
+    <button class="btn btn-primary">↑ Import Orders</button>
+  </div>
+
+  <!-- ============ Tabs ============ -->
+  <div class="tabs">
+    <button class="tab active">Dashboard</button>
+    <button class="tab">+ Log Trade</button>
+    <button class="tab">Trade History</button>
+    <button class="tab">Playbooks</button>
+    <button class="tab">Calendar</button>
+    <button class="tab">Weekly Report</button>
+  </div>
+
+  <!-- ============ Filters: time range + custom date ============ -->
+  <div class="filters-row">
+    <div class="seg">
+      <button>All Time</button>
+      <button class="active">This Month</button>
+      <button>This Week</button>
+      <button>Today</button>
+    </div>
+    <div class="daterange">
+      <span>From</span>
+      <input type="date" value="2026-05-01" />
+      <span>→</span>
+      <input type="date" value="2026-05-08" />
+    </div>
+    <span class="spacer"></span>
+    <button class="btn btn-sm">📥 Export CSV</button>
+    <button class="btn btn-sm">📄 Export PDF</button>
+  </div>
+
+  <!-- ============ KPI strip ============ -->
+  <div class="kpis">
+    <div class="kpi">
+      <div class="label">Balance</div>
+      <div class="value">$51,282</div>
+      <div class="sub">Init $51,058</div>
+    </div>
+    <div class="kpi value-pos">
+      <div class="label">Net P&amp;L</div>
+      <div class="value">+$224.10</div>
+      <div class="trend-pill up">+0.44%</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Win Rate</div>
+      <div class="value">67%</div>
+      <div class="sub">4W · 2L</div>
+    </div>
+    <div class="kpi value-warn">
+      <div class="label">Avg RR</div>
+      <div class="value">0.97</div>
+      <div class="sub">Target ≥ 1.50</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Profit Factor</div>
+      <div class="value">1.49</div>
+      <div class="sub">Avg Win $169</div>
+    </div>
+    <div class="kpi value-pos">
+      <div class="label">Quality Score</div>
+      <div class="value">78<span style="font-size:14px;color:var(--text-mute)"> /100</span></div>
+      <div class="sub">A-Setup adherence</div>
+    </div>
+  </div>
+
+  <!-- ============ Equity + Returns ============ -->
+  <div class="row r-2">
+    <div class="panel panel-hi">
+      <h3>Account Balance <span class="right">$51,282.00</span></h3>
+      <div class="chart-wrap"><canvas id="equityChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>Returns <span class="right">
+        <button class="btn btn-sm">D</button>
+        <button class="btn btn-sm">W</button>
+        <button class="btn btn-sm">M</button>
+      </span></h3>
+      <div class="chart-wrap"><canvas id="returnsChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ============ NEW: Drawdown + Win-rate over time + Trades by symbol ============ -->
+  <div class="row r-3eq">
+    <div class="panel">
+      <h3>Drawdown <span class="right">Max -$252</span></h3>
+      <div class="chart-wrap"><canvas id="ddChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>Win Rate Over Time <span class="right">Last 12mo</span></h3>
+      <div class="chart-wrap"><canvas id="wrChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <h3>Trades by Symbol <span class="right">All Time</span></h3>
+      <div class="chart-wrap"><canvas id="symChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ============ Calendar (May 2026) ============ -->
+  <div class="panel" style="margin-bottom:14px">
+    <h3>Monthly Breakdown — May 2026
+      <span class="right">
+        <button class="btn btn-sm">←</button>
+        <button class="btn btn-sm">Today</button>
+        <button class="btn btn-sm">→</button>
+      </span>
+    </h3>
+    <div class="cal">
+      <div class="h">Mon</div><div class="h">Tue</div><div class="h">Wed</div><div class="h">Thu</div>
+      <div class="h">Fri</div><div class="h">Sat</div><div class="h">Sun</div><div class="h">Week</div>
+
+      <div class="d"><div class="num"></div></div>
+      <div class="d"><div class="num"></div></div>
+      <div class="d"><div class="num"></div></div>
+      <div class="d"><div class="num"></div></div>
+      <div class="d"><div class="num">1</div></div>
+      <div class="d"><div class="num">2</div></div>
+      <div class="d"><div class="num">3</div></div>
+      <div class="week"><span class="lbl">Week 1</span><b>—</b></div>
+
+      <div class="d win">
+        <div><div class="num">4</div><div class="sub">1 trade · 100%</div></div>
+        <div class="pnl">+$241.20</div>
+      </div>
+      <div class="d loss">
+        <div><div class="num">5</div><div class="sub">4 trades · 50%</div></div>
+        <div class="pnl">-$155.80</div>
+      </div>
+      <div class="d win">
+        <div><div class="num">6</div><div class="sub">1 trade · 100%</div></div>
+        <div class="pnl">+$138.70</div>
+      </div>
+      <div class="d"><div class="num">7</div></div>
+      <div class="d"><div class="num">8</div></div>
+      <div class="d"><div class="num">9</div></div>
+      <div class="d"><div class="num">10</div></div>
+      <div class="week win"><span class="lbl">Week 2</span><b>+$224</b><span class="lbl" style="color:var(--text-dim)">6 trades</span></div>
+
+      <div class="d"><div class="num">11</div></div><div class="d"><div class="num">12</div></div><div class="d"><div class="num">13</div></div>
+      <div class="d"><div class="num">14</div></div><div class="d"><div class="num">15</div></div><div class="d"><div class="num">16</div></div><div class="d"><div class="num">17</div></div>
+      <div class="week"><span class="lbl">Week 3</span><b>—</b></div>
+
+      <div class="d"><div class="num">18</div></div><div class="d"><div class="num">19</div></div><div class="d"><div class="num">20</div></div>
+      <div class="d"><div class="num">21</div></div><div class="d"><div class="num">22</div></div><div class="d"><div class="num">23</div></div><div class="d"><div class="num">24</div></div>
+      <div class="week"><span class="lbl">Week 4</span><b>—</b></div>
+
+      <div class="d"><div class="num">25</div></div><div class="d"><div class="num">26</div></div><div class="d"><div class="num">27</div></div>
+      <div class="d"><div class="num">28</div></div><div class="d"><div class="num">29</div></div><div class="d"><div class="num">30</div></div><div class="d"><div class="num">31</div></div>
+      <div class="week"><span class="lbl">Week 5</span><b>—</b></div>
+    </div>
+  </div>
+
+  <!-- ============ A-Setup Checklist + Win Rate by Setup + Sessions ============ -->
+  <div class="row r-3">
+    <!-- A-Setup checklist -->
+    <div class="panel panel-hi">
+      <h3>A-Setup Checklist <span class="right">Pre-trade gate</span></h3>
+      <div class="checklist">
+        <label class="check-item on" data-w="20" onclick="toggleCheck(this)">
+          <span class="box"></span>
+          <span class="lbl"><b>HTF bias aligned</b><small>Higher-timeframe trend matches direction</small></span>
+        </label>
+        <label class="check-item on" data-w="20" onclick="toggleCheck(this)">
+          <span class="box"></span>
+          <span class="lbl"><b>Liquidity swept cleanly</b><small>Stop-run or sweep before entry</small></span>
+        </label>
+        <label class="check-item on" data-w="20" onclick="toggleCheck(this)">
+          <span class="box"></span>
+          <span class="lbl"><b>Risk sized to ≤ 1% of account</b><small>Position size ≤ $510</small></span>
+        </label>
+        <label class="check-item" data-w="20" onclick="toggleCheck(this)">
+          <span class="box"></span>
+          <span class="lbl"><b>No red-folder news within 30 min</b><small>Check ForexFactory / FOMC / NFP / CPI</small></span>
+        </label>
+        <label class="check-item on" data-w="20" onclick="toggleCheck(this)">
+          <span class="box"></span>
+          <span class="lbl"><b>Trade plan journaled pre-entry</b><small>Daily Bias or Playbook saved before fill</small></span>
+        </label>
+      </div>
+      <div class="qscore-big" id="qsBig">
+        <div class="ring" style="--pct:80"><span>80</span></div>
+        <div>
+          <div class="lbl">Quality Score</div>
+          <div class="verdict a">A-Setup ✓</div>
+          <div class="sub" style="font-size:11px;color:var(--text-dim);margin-top:4px">4 of 5 confirmations · ≥ 80 = A-grade</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Setup win rates -->
+    <div class="panel">
+      <h3>Win Rate by Setup</h3>
+      <div class="setup-list">
+        <div class="setup-row"><span class="name">15m FVG</span><span class="winrate">100%</span><span class="pnl pos">+$190</span></div>
+        <div class="setup-row"><span class="name">15m iFVG</span><span class="winrate">67%</span><span class="pnl pos">+$147</span></div>
+        <div class="setup-row"><span class="name">MS Break</span><span class="winrate">100%</span><span class="pnl pos">+$139</span></div>
+        <div class="setup-row"><span class="name">5m FVG</span><span class="winrate" style="background:var(--red-soft);color:var(--red)">0%</span><span class="pnl neg">-$252</span></div>
+      </div>
+    </div>
+
+    <!-- P&L by session -->
+    <div class="panel">
+      <h3>P&amp;L by Session</h3>
+      <div class="chart-wrap"><canvas id="sessChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ============ Playbooks ============ -->
+  <div class="panel" style="margin-bottom:14px">
+    <h3>Playbooks <span class="right"><button class="btn btn-sm btn-primary">+ New Playbook</button></span></h3>
+    <div class="playbook-grid">
+
+      <div class="playbook">
+        <div class="pb-head">
+          <div class="pb-icon">N</div>
+          <div>
+            <div class="pb-name">NY Reversal — 15m FVG</div>
+            <div class="pb-cat">ICT · Reversal</div>
+          </div>
+        </div>
+        <div class="pb-stats">
+          <div class="pb-stat"><div class="v" style="color:var(--green)">100%</div><div class="l">Win rate</div></div>
+          <div class="pb-stat"><div class="v">+$190</div><div class="l">Net</div></div>
+          <div class="pb-stat"><div class="v">2.1</div><div class="l">Avg RR</div></div>
+        </div>
+        <div class="pb-meta">
+          <span class="chip session">New York</span>
+          <span class="chip">15m</span>
+          <span class="chip">XAUUSD</span>
+          <span class="chip">FVG · Sweep</span>
+        </div>
+      </div>
+
+      <div class="playbook">
+        <div class="pb-head">
+          <div class="pb-icon" style="background:rgba(139,124,255,.14);color:var(--violet)">A</div>
+          <div>
+            <div class="pb-name">Asia Liquidity Sweep</div>
+            <div class="pb-cat">SMC · Continuation</div>
+          </div>
+        </div>
+        <div class="pb-stats">
+          <div class="pb-stat"><div class="v" style="color:var(--green)">67%</div><div class="l">Win rate</div></div>
+          <div class="pb-stat"><div class="v">+$147</div><div class="l">Net</div></div>
+          <div class="pb-stat"><div class="v">1.4</div><div class="l">Avg RR</div></div>
+        </div>
+        <div class="pb-meta">
+          <span class="chip session">Asia</span>
+          <span class="chip">15m</span>
+          <span class="chip">iFVG · LG sweep</span>
+        </div>
+      </div>
+
+      <div class="playbook">
+        <div class="pb-head">
+          <div class="pb-icon" style="background:rgba(255,182,72,.12);color:var(--amber)">L</div>
+          <div>
+            <div class="pb-name">London Open Break</div>
+            <div class="pb-cat">Price Action · Breakout</div>
+          </div>
+        </div>
+        <div class="pb-stats">
+          <div class="pb-stat"><div class="v" style="color:var(--green)">100%</div><div class="l">Win rate</div></div>
+          <div class="pb-stat"><div class="v">+$139</div><div class="l">Net</div></div>
+          <div class="pb-stat"><div class="v">1.2</div><div class="l">Avg RR</div></div>
+        </div>
+        <div class="pb-meta">
+          <span class="chip session">London</span>
+          <span class="chip">15m / 5m</span>
+          <span class="chip">MS Break</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ Recent trades — now with Quality Score column ============ -->
+  <div class="panel">
+    <h3>Recent Trades <span class="right"><a href="#">View all →</a></span></h3>
+    <table class="trades">
+      <thead>
+        <tr>
+          <th>Date</th><th>Symbol</th><th>Dir</th><th>Setup</th><th>Session</th>
+          <th>Quality</th><th>Net P&amp;L</th><th>Outcome</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>05/06</td><td>XAUUSD</td><td><span class="tag buy">BUY</span></td>
+          <td>MS Break</td><td><span class="tag dim">London</span></td>
+          <td><span class="qscore hi">A · 88</span></td>
+          <td class="pnl-cell pos">+$138.70</td><td>Profit Taken</td>
+        </tr>
+        <tr>
+          <td>05/05</td><td>XAUUSD</td><td><span class="tag buy">BUY</span></td>
+          <td>15m FVG</td><td><span class="tag dim">New York</span></td>
+          <td><span class="qscore hi">A · 92</span></td>
+          <td class="pnl-cell pos">+$190.00</td><td>Great Exit</td>
+        </tr>
+        <tr>
+          <td>05/05</td><td>XAUUSD</td><td><span class="tag sell">SELL</span></td>
+          <td>5m FVG</td><td><span class="tag dim">Asia</span></td>
+          <td><span class="qscore lo">C · 42</span></td>
+          <td class="pnl-cell neg">-$251.60</td><td>Loss · Review</td>
+        </tr>
+        <tr>
+          <td>05/05</td><td>XAUUSD</td><td><span class="tag sell">SELL</span></td>
+          <td>15m iFVG</td><td><span class="tag dim">New York</span></td>
+          <td><span class="qscore mid">B · 64</span></td>
+          <td class="pnl-cell neg">-$201.60</td><td>Loss · Review</td>
+        </tr>
+        <tr>
+          <td>05/05</td><td>XAUUSD</td><td><span class="tag sell">SELL</span></td>
+          <td>15m iFVG</td><td><span class="tag dim">London</span></td>
+          <td><span class="qscore hi">A · 84</span></td>
+          <td class="pnl-cell pos">+$107.40</td><td>Profit Taken</td>
+        </tr>
+        <tr>
+          <td>05/04</td><td>XAUUSD</td><td><span class="tag sell">SELL</span></td>
+          <td>15m iFVG</td><td><span class="tag dim">Asia</span></td>
+          <td><span class="qscore hi">A · 90</span></td>
+          <td class="pnl-cell pos">+$241.20</td><td>Profit Taken</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <b>Trading Journal Pro</b> — dark trader workspace with A-Setup checklist, Quality Score, Playbooks,
+    drawdown analytics and session breakdowns. Open this side-by-side with the original
+    (<a href="https://monsteriiz.github.io/Trade-Journal/" target="_blank">Trade-Journal v1</a>) to compare.
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   Charts (Chart.js) — palette tuned to the dark theme
+   ============================================================ */
+const css = getComputedStyle(document.documentElement);
+const C = {
+  text:   css.getPropertyValue('--text').trim(),
+  dim:    css.getPropertyValue('--text-dim').trim(),
+  mute:   css.getPropertyValue('--text-mute').trim(),
+  accent: css.getPropertyValue('--accent').trim(),
+  green:  css.getPropertyValue('--green').trim(),
+  red:    css.getPropertyValue('--red').trim(),
+  amber:  css.getPropertyValue('--amber').trim(),
+  violet: css.getPropertyValue('--violet').trim(),
+  grid:   'rgba(255,255,255,.04)',
+};
+Chart.defaults.color = C.dim;
+Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+Chart.defaults.font.size = 11;
+
+/* Equity curve (gradient area) */
+const eqCtx = document.getElementById('equityChart').getContext('2d');
+const eqGrad = eqCtx.createLinearGradient(0, 0, 0, 200);
+eqGrad.addColorStop(0, 'rgba(60,224,196,.35)');
+eqGrad.addColorStop(1, 'rgba(60,224,196,0)');
+new Chart(eqCtx, {
+  type: 'line',
+  data: {
+    labels: ['05/03','05/04','05/04','05/05','05/05','05/05','05/05','05/06','05/06'],
+    datasets: [{
+      data: [51058, 51299, 51487, 51297, 51190, 51095, 51202, 51140, 51282],
+      borderColor: C.accent, backgroundColor: eqGrad,
+      borderWidth: 2.5, tension: .35, fill: true, pointRadius: 0
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#0a0f1c', borderColor:C.accent, borderWidth:1 } },
+    scales: {
+      x: { grid:{ color: C.grid }, ticks:{ color: C.mute } },
+      y: { grid:{ color: C.grid }, ticks:{ color: C.mute, callback: v => '$' + v.toLocaleString() } }
+    }
+  }
+});
+
+/* Returns bar by day */
+new Chart(document.getElementById('returnsChart'), {
+  type: 'bar',
+  data: {
+    labels: ['05/04','05/05','05/06','05/07','05/08'],
+    datasets:[{
+      data:[241, -156, 139, 0, 0],
+      backgroundColor: ctx => ctx.parsed.y >= 0 ? 'rgba(46,213,115,.7)' : 'rgba(255,86,117,.7)',
+      borderRadius: 6, borderSkipped: false
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}},
+    scales:{ x:{grid:{color:C.grid}}, y:{grid:{color:C.grid}, ticks:{ callback:v=>'$'+v }}}
+  }
+});
+
+/* Drawdown curve (red filled area) */
+const ddCtx = document.getElementById('ddChart').getContext('2d');
+const ddGrad = ddCtx.createLinearGradient(0,0,0,200);
+ddGrad.addColorStop(0, 'rgba(255,86,117,.0)');
+ddGrad.addColorStop(1, 'rgba(255,86,117,.30)');
+new Chart(ddCtx, {
+  type: 'line',
+  data: {
+    labels: ['05/03','05/04','05/05','05/05','05/05','05/06','05/06'],
+    datasets: [{
+      data: [0, 0, -10, -252, -145, -207, 0],
+      borderColor: C.red, backgroundColor: ddGrad,
+      borderWidth: 2, tension:.35, fill: true, pointRadius: 0
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}},
+    scales:{ x:{grid:{color:C.grid}}, y:{grid:{color:C.grid}, ticks:{ callback:v=>'$'+v }}}
+  }
+});
+
+/* Win rate over time (12mo) */
+new Chart(document.getElementById('wrChart'), {
+  type:'bar',
+  data:{
+    labels:['Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May'],
+    datasets:[{
+      data:[55,62,48,71,58,66,72,60,68,55,63,67],
+      backgroundColor: ctx => ctx.parsed.y >= 60 ? 'rgba(60,224,196,.7)' : 'rgba(255,182,72,.6)',
+      borderRadius: 4
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{ x:{grid:{display:false}}, y:{ grid:{color:C.grid}, ticks:{ callback: v=>v+'%' }, suggestedMax:100 } }
+  }
+});
+
+/* Trades by symbol — horizontal bar */
+new Chart(document.getElementById('symChart'), {
+  type:'bar',
+  data:{
+    labels:['XAUUSD','BTCUSD','NAS100','EURUSD','USDJPY'],
+    datasets:[{
+      data:[ 6, 0, 0, 0, 0 ],
+      backgroundColor: 'rgba(60,224,196,.7)', borderRadius: 6
+    }]
+  },
+  options:{
+    indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{ x:{ grid:{color:C.grid}, ticks:{stepSize:1} }, y:{grid:{display:false}} }
+  }
+});
+
+/* P&L by session */
+new Chart(document.getElementById('sessChart'), {
+  type:'bar',
+  data:{
+    labels:['Asia','London','New York','Out of Session'],
+    datasets:[{
+      data:[241, 191, -53, 0],
+      backgroundColor: ctx => ctx.parsed.y >= 0 ? 'rgba(46,213,115,.7)' : 'rgba(255,86,117,.7)',
+      borderRadius: 6
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{ x:{grid:{display:false}}, y:{grid:{color:C.grid}, ticks:{ callback:v=>'$'+v }}}
+  }
+});
+
+/* ============================================================
+   A-Setup Checklist — toggle + recompute Quality Score
+   ============================================================ */
+function toggleCheck(el){
+  el.classList.toggle('on');
+  let total = 0;
+  document.querySelectorAll('.check-item').forEach(it=>{
+    if (it.classList.contains('on')) total += parseInt(it.dataset.w || '0', 10);
+  });
+  const ring = document.querySelector('#qsBig .ring');
+  const span = document.querySelector('#qsBig .ring span');
+  const verdict = document.querySelector('#qsBig .verdict');
+  ring.style.setProperty('--pct', total);
+  span.textContent = total;
+  let label = 'F · Skip', cls = 'a';
+  if (total >= 80) { label = 'A-Setup ✓'; cls = 'a'; }
+  else if (total >= 60) { label = 'B · Acceptable'; cls = 'b'; }
+  else if (total >= 40) { label = 'C · Marginal'; cls = 'c'; }
+  else { label = 'F · Skip'; cls = 'f'; }
+  verdict.textContent = label;
+  verdict.className = 'verdict ' + cls;
+  verdict.style.color = total >= 80 ? 'var(--accent-bright)' : total >= 60 ? 'var(--amber)' : 'var(--red)';
+}
+</script>
+</body>
+</html>
